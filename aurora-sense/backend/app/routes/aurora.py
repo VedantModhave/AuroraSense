@@ -1,12 +1,15 @@
 from fastapi import APIRouter, HTTPException
 from app.services.noaa_service import fetch_kp_index, fetch_aurora_forecast
+from app.services.scheduler import cache
 from app.models.aurora import KpData, AuroraForecast
 
 router = APIRouter()
 
 @router.get("/kp", response_model=KpData)
 async def get_kp_index():
-    """Current Kp index from NOAA."""
+    """Current Kp index — served from background-refreshed cache."""
+    if cache["kp"]:
+        return cache["kp"]
     try:
         return await fetch_kp_index()
     except Exception as e:
@@ -14,7 +17,9 @@ async def get_kp_index():
 
 @router.get("/forecast", response_model=AuroraForecast)
 async def get_aurora_forecast():
-    """3-day aurora forecast from NOAA."""
+    """3-day aurora forecast — served from background-refreshed cache."""
+    if cache["forecast"]:
+        return cache["forecast"]
     try:
         return await fetch_aurora_forecast()
     except Exception as e:

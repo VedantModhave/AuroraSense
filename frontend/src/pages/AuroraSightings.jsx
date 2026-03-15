@@ -34,7 +34,7 @@ export default function AuroraSightings() {
 
   const fetchSightings = async () => {
     try {
-      const res = await fetch('/api/sightings')
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/sightings`)
       if (res.ok) {
         const data = await res.json()
         setSightings(data)
@@ -52,7 +52,7 @@ export default function AuroraSightings() {
 
     setSubmitting(true)
     try {
-      const res = await fetch('/api/sightings', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/sightings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

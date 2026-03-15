@@ -74,7 +74,7 @@ export function useAuroraAlerts() {
     for (const location of settings.locations) {
       try {
         // Fetch visibility for this location
-        const response = await fetch(`/api/visibility?lat=${location.lat}&lon=${location.lon}`)
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/visibility?lat=${location.lat}&lon=${location.lon}`)
         if (!response.ok) continue
 
         const visibility = await response.json()

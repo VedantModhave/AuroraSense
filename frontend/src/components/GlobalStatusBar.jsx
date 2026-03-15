@@ -12,7 +12,7 @@ export default function GlobalStatusBar() {
   useEffect(() => {
     const fetchSW = async () => {
       try {
-        const res = await window.fetch('/api/space-weather')
+        const res = await window.fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/space-weather`)
         if (res.ok) {
           const data = await res.json()
           setSpaceWeather(data)

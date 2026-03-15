@@ -8,7 +8,7 @@ export function useAuroraMap(refreshInterval = 60000) {
   const fetchAuroraMap = useCallback(async () => {
     try {
       setError(null)
-      const response = await fetch('/api/aurora-map')
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/aurora-map`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch aurora map: ${response.statusText}`)

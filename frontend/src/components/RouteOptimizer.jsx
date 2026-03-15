@@ -56,7 +56,7 @@ export default function RouteOptimizer() {
         profile: criteria.profile,
       })
 
-      const response = await fetch(`/api/route/optimize?${params}`)
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/route/optimize?${params}`)
       
       if (!response.ok) {
         const data = await response.json()

@@ -206,7 +206,7 @@ function AuroraMapDeckGLInner() {
     setLoadingVisibility(true)
     setVisibilityData(null)
     try {
-      const res = await fetch(`/api/visibility?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`)
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/visibility?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`)
       if (!res.ok) throw new Error(`Server error ${res.status}`)
       setVisibilityData(await res.json())
     } catch (err) {

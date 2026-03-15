@@ -7,7 +7,7 @@ export default function MapView() {
 
   return (
     <div className="min-h-screen bg-aurora-dark flex flex-col">
-      <header className="px-6 py-4 border-b border-gray-800 flex items-center gap-2">
+      <header className="px-6 py-4 border-b border-gray-800 flex items-center gap-2 flex-shrink-0">
         <span className="text-2xl">🗺️</span>
         <h1 className="text-xl font-semibold text-white">Aurora Map</h1>
         {!loading && (
@@ -16,7 +16,7 @@ export default function MapView() {
           </span>
         )}
       </header>
-      <main className="flex-1 p-4">
+      <main className="flex-1 px-4 pb-4 pt-3">
         <AuroraMap visibilityLatitude={visibilityLat} />
       </main>
     </div>

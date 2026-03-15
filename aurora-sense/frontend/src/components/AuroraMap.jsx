@@ -1,101 +1,123 @@
-import { useRef, useEffect } from 'react'
-import mapboxgl from 'mapbox-gl'
+import { useState, useCallback } from 'react'
+import DeckGL from '@deck.gl/react'
+import { PolygonLayer, LineLayer } from '@deck.gl/layers'
+import { Map } from 'react-map-gl/maplibre'
+import 'maplibre-gl/dist/maplibre-gl.css'
+import MapErrorBoundary from './MapErrorBoundary'
+import KpContextOverlay from './KpContextOverlay'
+import DataSourcesFooter from './DataSourcesFooter'
 
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
+// Free OpenStreetMap tile style
+const OSM_STYLE = {
+  version: 8,
+  sources: {
+    osm: {
+      type: 'raster',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors',
+    },
+  },
+  layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+}
 
-const AURORA_OVAL_SOURCE = 'https://services.swpc.noaa.gov/json/ovation_aurora_latest.json'
+const INITIAL_VIEW = {
+  longitude: 0,
+  latitude: 70,
+  zoom: 2,
+  pitch: 0,
+  bearing: 0,
+}
 
-export default function AuroraMap({ visibilityLatitude }) {
-  const mapContainer = useRef(null)
-  const map = useRef(null)
+/** Build a ring of coordinates at a given latitude (360 points). */
+function latRing(lat) {
+  return Array.from({ length: 361 }, (_, i) => [i - 180, lat])
+}
 
-  useEffect(() => {
-    if (map.current) return
+/** Aurora oval polygon: filled band from visibilityLatitude to 90°N. */
+function buildAuroraPolygon(lat) {
+  const outer = latRing(90)
+  const inner = [...latRing(lat)].reverse()
+  return [[...outer, outer[0]], [...inner, inner[0]]]
+}
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [0, 70],
-      zoom: 2,
-      projection: 'globe',
-    })
+/** Visibility boundary as a LineLayer data array. */
+function buildBoundaryLine(lat) {
+  const ring = latRing(lat)
+  return ring.slice(0, -1).map((pos, i) => ({
+    from: pos,
+    to: ring[i + 1],
+  }))
+}
 
-    map.current.on('load', () => {
-      // Aurora visibility boundary line
-      map.current.addSource('visibility-line', {
-        type: 'geojson',
-        data: buildLatitudeLine(visibilityLatitude ?? 65),
-      })
+function AuroraMapInner({ visibilityLatitude = 65 }) {
+  const [viewState, setViewState] = useState(INITIAL_VIEW)
 
-      map.current.addLayer({
-        id: 'visibility-line',
-        type: 'line',
-        source: 'visibility-line',
-        paint: {
-          'line-color': '#00ff88',
-          'line-width': 2,
-          'line-dasharray': [4, 2],
-          'line-opacity': 0.8,
-        },
-      })
+  const layers = [
+    new PolygonLayer({
+      id: 'aurora-oval',
+      data: [{ polygon: buildAuroraPolygon(visibilityLatitude) }],
+      getPolygon: d => d.polygon,
+      getFillColor: [0, 255, 136, 35],
+      getLineColor: [0, 0, 0, 0],
+      filled: true,
+      stroked: false,
+      pickable: false,
+    }),
+    new LineLayer({
+      id: 'visibility-boundary',
+      data: buildBoundaryLine(visibilityLatitude),
+      getSourcePosition: d => d.from,
+      getTargetPosition: d => d.to,
+      getColor: [0, 255, 136, 200],
+      getWidth: 2,
+      widthUnits: 'pixels',
+      pickable: false,
+    }),
+  ]
 
-      // Aurora oval fill (approximate)
-      map.current.addSource('aurora-fill', {
-        type: 'geojson',
-        data: buildAuroraOval(visibilityLatitude ?? 65),
-      })
-
-      map.current.addLayer({
-        id: 'aurora-fill',
-        type: 'fill',
-        source: 'aurora-fill',
-        paint: {
-          'fill-color': '#00ff88',
-          'fill-opacity': 0.12,
-        },
-      })
-    })
-
-    return () => map.current?.remove()
+  const onViewStateChange = useCallback(({ viewState: vs }) => {
+    setViewState(vs)
   }, [])
 
-  // Update layers when visibility latitude changes
-  useEffect(() => {
-    if (!map.current || !map.current.isStyleLoaded() || visibilityLatitude == null) return
-    const src = map.current.getSource('visibility-line')
-    const fillSrc = map.current.getSource('aurora-fill')
-    if (src) src.setData(buildLatitudeLine(visibilityLatitude))
-    if (fillSrc) fillSrc.setData(buildAuroraOval(visibilityLatitude))
-  }, [visibilityLatitude])
-
   return (
-    <div className="relative w-full h-full rounded-xl overflow-hidden border border-gray-800">
-      <div ref={mapContainer} className="w-full h-full" />
-      {!mapboxgl.accessToken && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 text-sm text-gray-400">
-          Set <code className="mx-1 text-aurora-green">VITE_MAPBOX_TOKEN</code> to enable the map
+    // Key fix: explicit height so DeckGL canvas resolves to real pixel dimensions
+    <div
+      className="relative w-full rounded-xl overflow-hidden border border-gray-800"
+      style={{ height: 'calc(100vh - 180px)', minHeight: '400px' }}
+    >
+      <DeckGL
+        viewState={viewState}
+        onViewStateChange={onViewStateChange}
+        controller={true}
+        layers={layers}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+      >
+        <Map mapStyle={OSM_STYLE} />
+      </DeckGL>
+      <KpContextOverlay />
+
+      {/* Legend */}
+      <div className="absolute bottom-20 left-4 bg-gray-900/80 text-xs text-gray-300 px-3 py-2 rounded-lg border border-gray-700 pointer-events-none z-10">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-4 h-1 rounded" style={{ background: '#00ff88' }} />
+          Visibility boundary ({visibilityLatitude}° N)
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <span className="w-4 h-3 rounded opacity-40" style={{ background: '#00ff88' }} />
+          Aurora zone
+        </div>
+      </div>
+
+      <DataSourcesFooter />
     </div>
   )
 }
 
-function buildLatitudeLine(lat) {
-  const coords = Array.from({ length: 361 }, (_, i) => [i - 180, lat])
-  return {
-    type: 'Feature',
-    geometry: { type: 'LineString', coordinates: coords },
-  }
-}
-
-function buildAuroraOval(lat) {
-  const outer = Array.from({ length: 361 }, (_, i) => [i - 180, 90])
-  const inner = Array.from({ length: 361 }, (_, i) => [i - 180, lat]).reverse()
-  return {
-    type: 'Feature',
-    geometry: {
-      type: 'Polygon',
-      coordinates: [[...outer, outer[0]], [...inner, inner[0]]],
-    },
-  }
+export default function AuroraMap({ visibilityLatitude }) {
+  return (
+    <MapErrorBoundary>
+      <AuroraMapInner visibilityLatitude={visibilityLatitude} />
+    </MapErrorBoundary>
+  )
 }

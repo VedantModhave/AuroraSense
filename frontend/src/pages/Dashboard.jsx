@@ -9,12 +9,14 @@ import AlertSettings from '../components/AlertSettings'
 import SolarWindPanel from '../components/SolarWindPanel'
 import VisibilityGauge from '../components/VisibilityGauge'
 import PhotographyAdvisor from '../components/PhotographyAdvisor'
+import AuroraProbabilityForecast from '../components/AuroraProbabilityForecast'
 
 export default function Dashboard() {
   const { kpData, forecast, loading, error, refetch } = useAuroraData()
   const [showAlertSettings, setShowAlertSettings] = useState(false)
   const [spaceWeather, setSpaceWeather] = useState(null)
   const [substormDismissed, setSubstormDismissed] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
   const bzHistoryRef = useRef([])
 
   const {
@@ -133,27 +135,45 @@ export default function Dashboard() {
 
       {/* Main layout */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+        {/* Mobile Sidebar Toggle */}
+        <button 
+          onClick={() => setShowSidebar(!showSidebar)}
+          className="lg:hidden w-full py-3 bg-gray-950 border-b border-gray-800 text-[10px] text-aurora-green uppercase tracking-widest font-bold flex items-center justify-center gap-2"
+        >
+          {showSidebar ? 'Hide System Controls ▴' : 'Show System Controls ▾'}
+        </button>
+
         {/* Sidebar */}
-        <aside className="w-full lg:w-80 flex-shrink-0 p-4 flex gap-4 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden border-b lg:border-r border-gray-800 lg:flex-col items-start lg:items-stretch">
+        <aside className={`${showSidebar ? 'flex' : 'hidden'} lg:flex w-full lg:w-80 flex-shrink-0 p-4 lg:p-6 flex-col gap-6 overflow-y-auto border-b lg:border-r border-gray-800 items-stretch bg-gray-900/30`}>
           {loading ? (
-            <div className="text-gray-500 text-sm animate-pulse">Loading space weather…</div>
+            <div className="text-gray-500 text-sm animate-pulse flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-gray-700 border-t-aurora-green rounded-full animate-spin" />
+              Syncing orbital data…
+            </div>
           ) : (
             <>
               <KpGauge kp={currentKp} />
+              
+              {/* Added: Aurora Probability Forecast sparkline */}
+              <AuroraProbabilityForecast forecast={forecast?.forecast} />
+
               <ForecastChart forecast={forecast?.forecast} />
 
-              {/* Visibility Boundary */}
+              {/* Visibility Boundary - Polished label */}
               <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 text-sm">
-                <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Visibility Boundary</p>
-                <p className="text-aurora-green font-semibold text-lg">{visibilityLat}° N</p>
-                <p className="text-gray-500 text-xs mt-1">Aurora visible poleward of this latitude</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2 font-semibold">Visibility Boundary</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-aurora-green font-bold text-xl">{visibilityLat}° N</p>
+                  <span className="text-[9px] text-gray-500 uppercase tracking-tight">Geomagnetic</span>
+                </div>
+                <p className="text-gray-500 text-[10px] mt-1.5 leading-tight">Aurora visibility boundary based on current oval dimensions.</p>
               </div>
 
               {/* Visibility Score Gauge */}
               {visibilityScore !== null && (
                 <VisibilityGauge
                   score={visibilityScore}
-                  label="Based on current aurora probability"
+                  label="Composite score: Aurora + Cloud + Darkness"
                 />
               )}
 

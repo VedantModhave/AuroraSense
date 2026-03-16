@@ -184,9 +184,9 @@ export default function RouteOptimizer() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-4">
+    <div className="flex flex-col lg:flex-row w-full h-full gap-4 min-h-0">
       {/* Control Panel */}
-      <div className="lg:w-96 bg-gray-900 rounded-xl border border-gray-800 p-6 flex-shrink-0">
+      <div className="lg:w-96 bg-gray-900 rounded-xl border border-gray-800 p-6 flex-shrink-0 overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <span>🗺️</span> Route Optimizer
@@ -201,24 +201,46 @@ export default function RouteOptimizer() {
 
         <div className={`${showFilters ? 'block' : 'hidden'} lg:block`}>
           {/* Origin */}
-          <div className="space-y-3 mb-6">
-          <div className="text-sm font-semibold text-gray-300">Starting Location</div>
-          <input
-            type="number"
-            placeholder="Latitude"
-            value={origin.lat}
-            onChange={(e) => setOrigin(prev => ({ ...prev, lat: e.target.value }))}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:border-aurora-green outline-none"
-            step="0.01"
-          />
-          <input
-            type="number"
-            placeholder="Longitude"
-            value={origin.lon}
-            onChange={(e) => setOrigin(prev => ({ ...prev, lon: e.target.value }))}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:border-aurora-green outline-none"
-            step="0.01"
-          />
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-1">
+            <div className="text-sm font-semibold text-gray-300">Starting Location</div>
+            <button
+              onClick={() => {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      setOrigin({ 
+                        lat: pos.coords.latitude.toFixed(4), 
+                        lon: pos.coords.longitude.toFixed(4) 
+                      })
+                    },
+                    (err) => setError('Geolocation failed: ' + err.message)
+                  )
+                }
+              }}
+              className="text-[10px] text-aurora-green hover:underline flex items-center gap-1"
+            >
+              📍 Use My Location
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              placeholder="Latitude"
+              value={origin.lat}
+              onChange={(e) => setOrigin(prev => ({ ...prev, lat: e.target.value }))}
+              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:border-aurora-green outline-none"
+              step="0.01"
+            />
+            <input
+              type="number"
+              placeholder="Longitude"
+              value={origin.lon}
+              onChange={(e) => setOrigin(prev => ({ ...prev, lon: e.target.value }))}
+              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:border-aurora-green outline-none"
+              step="0.01"
+            />
+          </div>
         </div>
 
         {/* Criteria */}
@@ -334,8 +356,15 @@ export default function RouteOptimizer() {
             {/* Best-effort warning */}
             {!route.destination.meets_criteria && (
               <div className="p-3 bg-yellow-900/40 border border-yellow-700 rounded-lg text-xs text-yellow-300">
-                <div>⚠️ No location fully met the selected criteria.</div>
-                <div className="mt-1 opacity-90">Showing the best available location based on current aurora activity.</div>
+                <div className="font-bold flex items-center gap-1.5 mb-1">
+                  <span>⚠️</span> Optimal status: Not met
+                </div>
+                <div className="leading-snug">
+                  No location fully meets the selected criteria. Showing the best available option based on current conditions.
+                </div>
+                <div className="mt-2 pt-2 border-t border-yellow-700/50 text-[10px] opacity-80 italic">
+                  Hint: Try lowering cloud cover or aurora probability thresholds.
+                </div>
               </div>
             )}
 
@@ -393,7 +422,7 @@ export default function RouteOptimizer() {
       </div>
 
       {/* Map */}
-      <div className="flex-1 rounded-xl overflow-hidden border border-gray-800 relative min-h-[70vh] lg:min-h-0">
+      <div className="flex-1 rounded-xl overflow-hidden border border-gray-800 relative h-full min-h-[400px]">
         <DeckGL
           viewState={viewState}
           onViewStateChange={({ viewState }) => setViewState(viewState)}
@@ -401,6 +430,7 @@ export default function RouteOptimizer() {
           layers={layers}
           getTooltip={getTooltip}
           getCursor={({ isHovering }) => isHovering ? 'pointer' : 'grab'}
+          style={{ width: '100%', height: '100%' }}
         >
           <Map mapStyle={OSM_STYLE} />
         </DeckGL>

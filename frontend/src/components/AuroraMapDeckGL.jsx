@@ -140,9 +140,9 @@ function AuroraMapDeckGLInner() {
       data: auroraPoints,
       getPosition: d => d.position,
       getWeight: d => getAuroraWeight(d.probability),
-      radiusPixels: 35,
-      intensity: 1.2,
-      threshold: 0.04,
+      radiusPixels: 60,
+      intensity: 1.5,
+      threshold: 0.03,
       // Blue → Green → Purple color ramp matching 0–33 / 34–66 / 67–100
       colorRange: [
         [0, 50, 255, 0],      // 0%  — deep blue transparent
@@ -237,10 +237,8 @@ function AuroraMapDeckGLInner() {
   }, [])
 
   return (
-    <div
-      className="relative w-full rounded-xl overflow-hidden border border-gray-800"
-      style={{ height: 'calc(100vh - 180px)', minHeight: '400px' }}
-    >
+    <div className="flex-1 p-3 min-h-[400px] w-full h-full overflow-hidden">
+      <div className="w-full h-full rounded-xl overflow-hidden border border-gray-800 relative bg-gray-900/20">
       <DeckGL
         viewState={viewState}
         onViewStateChange={onViewStateChange}
@@ -248,7 +246,7 @@ function AuroraMapDeckGLInner() {
         layers={layers}
         getTooltip={getTooltip}
         onClick={handleMapClick}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', overflow: 'hidden' }}
         getCursor={({ isHovering }) => isHovering ? 'pointer' : 'crosshair'}
       >
         <Map mapStyle={OSM_STYLE} />
@@ -406,6 +404,7 @@ function AuroraMapDeckGLInner() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

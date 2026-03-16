@@ -83,15 +83,27 @@ async def calculate_visibility_score(
             logger.warning(f"No cloud cover data for lat={lat}, lon={lon}")
             cloud_cover = 50.0  # Default to 50% if unavailable
         
-        # 3. Calculate darkness score
+        # 3. Calculate darkness score (Solar position and Moon phase)
         darkness_factors = calculate_darkness_score(lat, lon, dt)
         darkness_score = darkness_factors.darkness_score
+
+        # 4. Estimate light pollution (Bortle Scale)
+        from app.services.light_pollution_service import estimate_bortle_scale
+        bortle = estimate_bortle_scale(lat, lon)
+        # Convert Bortle (1-9) to a 0-100 score where 1=100 (best) and 9=0 (worst)
+        light_pollution_score = max(0, 100 - (bortle - 1) * 12.5)
         
-        # 4. Calculate weighted visibility score
+        # 5. Calculate weighted visibility score (0-100)
+        # Weighting Rationale:
+        # - Aurora Probability (40%): The primary driver. Even with clear skies, no aurora means no visibility.
+        # - Clear Skies (30%): Most critical local factor. Clouds are the #1 enemy of observers.
+        # - Darkness (20%): Solar/Lunar interference. Essential for seeing dim structures.
+        # - Light Pollution (10%): Crucial for photographers, though bright aurora can cut through some glare.
         visibility_score = (
-            (aurora_probability * 0.5) +
-            ((100 - cloud_cover) * 0.3) +
-            (darkness_score * 0.2)
+            (aurora_probability * 0.40) +
+            ((100 - cloud_cover) * 0.30) +
+            (darkness_score * 0.20) +
+            (light_pollution_score * 0.10)
         )
         
         # 5. Generate recommendation

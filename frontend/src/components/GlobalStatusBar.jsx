@@ -66,7 +66,10 @@ export default function GlobalStatusBar() {
   if (!spaceWeather || dismissed) return null
 
   return (
-    <div className={`${risk.bg} border-b border-gray-800/80 px-4 py-1.5 flex items-center gap-6 text-xs backdrop-blur-sm z-50 relative shrink-0`}>
+    <div 
+      className="border-b border-gray-800/80 px-4 py-1.5 flex items-center gap-6 text-xs backdrop-blur-sm z-50 relative shrink-0"
+      style={{ background: 'linear-gradient(90deg, #0b1020, #102040, #1b3c4f)' }}
+    >
       <div className="flex items-center gap-1.5 text-gray-400">
         <div className="w-1.5 h-1.5 rounded-full bg-aurora-green animate-pulse" />
         <span className="font-semibold text-gray-300 uppercase tracking-wide text-[10px]">Live</span>

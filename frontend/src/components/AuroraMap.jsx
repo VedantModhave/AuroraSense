@@ -86,16 +86,16 @@ function AuroraMapInner({ visibilityLatitude = 65 }) {
 
   return (
     // Key fix: explicit height so DeckGL canvas resolves to real pixel dimensions
-    <div
-      className="relative w-full rounded-xl overflow-hidden border border-gray-800"
-      style={{ height: 'calc(100vh - 180px)', minHeight: '400px' }}
-    >
+    <div className="flex-1 p-3 min-h-[400px] w-full h-full overflow-hidden">
+      <div
+        className="relative w-full h-full rounded-xl overflow-hidden border border-gray-800 bg-gray-900/20"
+      >
       <DeckGL
         viewState={viewState}
         onViewStateChange={onViewStateChange}
         controller={true}
         layers={layers}
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', overflow: 'hidden' }}
       >
         <Map mapStyle={OSM_STYLE} />
       </DeckGL>
@@ -105,7 +105,7 @@ function AuroraMapInner({ visibilityLatitude = 65 }) {
       <div className="absolute bottom-20 left-4 bg-gray-900/80 text-xs text-gray-300 px-3 py-2 rounded-lg border border-gray-700 pointer-events-none z-10">
         <div className="flex items-center gap-2 mb-1">
           <span className="w-4 h-1 rounded" style={{ background: '#00ff88' }} />
-          Visibility boundary ({visibilityLatitude}° N)
+          Aurora visibility boundary: ~{visibilityLatitude}° geomagnetic latitude
         </div>
         <div className="flex items-center gap-2">
           <span className="w-4 h-3 rounded opacity-40" style={{ background: '#00ff88' }} />
@@ -114,6 +114,7 @@ function AuroraMapInner({ visibilityLatitude = 65 }) {
       </div>
 
       <DataSourcesFooter />
+      </div>
     </div>
   )
 }

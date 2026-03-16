@@ -44,9 +44,26 @@ export default function VisibilityGauge({ score = 0, label }) {
 
   return (
     <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-      <p className="text-xs text-gray-400 uppercase tracking-widest mb-3 font-semibold">
-        Visibility Score
-      </p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold">
+          Visibility Score
+        </p>
+        <div className="group relative">
+          <span className="text-gray-500 hover:text-aurora-green cursor-help text-xs">ⓘ</span>
+          <div className="absolute right-0 bottom-full mb-2 w-64 bg-gray-950 border border-gray-800 p-3 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+            <div className="text-[10px] text-gray-300 space-y-2 leading-relaxed">
+              <p className="font-bold text-aurora-green border-b border-gray-800 pb-1 mb-1">SCORING MODEL</p>
+              <div className="font-mono text-[9px] text-gray-400">
+                0.40 × Aurora Prob.<br/>
+                + 0.30 × (100 - Clouds)<br/>
+                + 0.20 × Darkness Score<br/>
+                + 0.10 × Light Pollution
+              </div>
+              <p>Aurora: OVATION aurora model. Clouds: Open-Meteo forecasts. Darkness: solar elevation & moon illumination.</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="flex flex-col items-center">
         <svg viewBox="0 0 160 90" className="w-full max-w-[180px]">

@@ -174,7 +174,11 @@ export default function AuroraSightings() {
             {loading ? (
               <div className="text-xs text-gray-500">Loading...</div>
             ) : sightings.length === 0 ? (
-              <div className="text-xs text-gray-500">No sightings reported yet.</div>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="text-3xl mb-3 opacity-30">🔭</div>
+                <div className="text-sm text-gray-400 font-medium">No sightings reported yet.</div>
+                <div className="text-[10px] text-gray-500 mt-1 max-w-[180px]">Be the first observer to report an aurora sighting.</div>
+              </div>
             ) : (
               sightings.slice().reverse().map(s => (
                 <div key={s.id} className="bg-gray-800/50 rounded p-3 text-sm border border-gray-800 hover:border-gray-700 transition-colors">
@@ -194,7 +198,8 @@ export default function AuroraSightings() {
         </div>
       </div>
 
-      <div className="flex-1 rounded-xl overflow-hidden border border-gray-800 relative min-h-[500px]">
+      <div className="flex-1 p-3 min-h-[500px] w-full h-full overflow-hidden">
+        <div className="w-full h-full rounded-xl overflow-hidden border border-gray-800 relative bg-gray-900/20">
         <DeckGL
           viewState={viewState}
           onViewStateChange={({ viewState }) => setViewState(viewState)}
@@ -203,12 +208,14 @@ export default function AuroraSightings() {
           getTooltip={getTooltip}
           onClick={handleMapClick}
           getCursor={({ isHovering }) => isHovering ? 'pointer' : 'crosshair'}
+          style={{ width: '100%', height: '100%', overflow: 'hidden' }}
         >
           <Map mapStyle={OSM_STYLE} />
         </DeckGL>
-        <div className="absolute top-4 left-4 bg-gray-900/80 backdrop-blur-md border border-gray-800 rounded px-3 py-2 text-xs text-gray-300 pointer-events-none">
+        <div className="absolute top-4 left-4 bg-gray-900/80 backdrop-blur-md border border-gray-800 rounded px-3 py-2 text-xs text-gray-300 pointer-events-none z-10">
           Click anywhere on the map to set location
         </div>
+      </div>
       </div>
     </div>
   )

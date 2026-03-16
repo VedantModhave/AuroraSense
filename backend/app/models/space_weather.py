@@ -12,6 +12,8 @@ class MagneticFieldReading(BaseModel):
 class MagneticFieldData(BaseModel):
     readings: List[MagneticFieldReading]
     last_updated: Optional[str] = None
+    source: str = "DSCOVR"
+    data_gap: bool = False
 
 class PlasmaReading(BaseModel):
     time_tag: str
@@ -22,6 +24,8 @@ class PlasmaReading(BaseModel):
 class PlasmaData(BaseModel):
     readings: List[PlasmaReading]
     last_updated: Optional[str] = None
+    source: str = "DSCOVR"
+    data_gap: bool = False
 
 class AuroraGridPoint(BaseModel):
     coordinates: List[float]  # [lon, lat]

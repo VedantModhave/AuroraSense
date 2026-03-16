@@ -16,84 +16,115 @@ from app.models.space_weather import (
 logger = logging.getLogger(__name__)
 
 # NOAA SWPC API endpoints
-MAG_URL = "https://services.swpc.noaa.gov/products/solar-wind/mag-1-day.json"
-PLASMA_URL = "https://services.swpc.noaa.gov/products/solar-wind/plasma-1-day.json"
 AURORA_GRID_URL = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
 KP_URL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
 
+MAG_SOURCES = [
+    ("DSCOVR", "https://services.swpc.noaa.gov/products/solar-wind/mag-1-day.json"),
+    ("ACE", "https://services.swpc.noaa.gov/products/solar-wind/mag-7-day.json"),  # Fallback
+]
+
+PLASMA_SOURCES = [
+    ("DSCOVR", "https://services.swpc.noaa.gov/products/solar-wind/plasma-1-day.json"),
+    ("ACE", "https://services.swpc.noaa.gov/products/solar-wind/plasma-7-day.json"),  # Fallback
+]
+
 async def fetch_magnetic_field() -> Optional[MagneticFieldData]:
     """
-    Fetch 1-day magnetic field data.
-    Format: [["time_tag","bx_gsm","by_gsm","bz_gsm","lon_gsm","lat_gsm","bt"], [...], ...]
+    Fetch magnetic field data with failover between DSCOVR and ACE.
     """
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(MAG_URL)
-            resp.raise_for_status()
-            data = resp.json()
+    for source_name, url in MAG_SOURCES:
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                data = resp.json()
 
-        if not data or len(data) < 2:
-            return None
-
-        # Skip header row
-        readings = []
-        for row in data[1:]:
-            try:
-                readings.append(
-                    MagneticFieldReading(
-                        time_tag=row[0],
-                        bx_gsm=float(row[1]) if row[1] not in [None, "", "-999.9"] else None,
-                        by_gsm=float(row[2]) if row[2] not in [None, "", "-999.9"] else None,
-                        bz_gsm=float(row[3]) if row[3] not in [None, "", "-999.9"] else None,
-                        bt=float(row[6]) if len(row) > 6 and row[6] not in [None, "", "-999.9"] else None,
-                    )
-                )
-            except (ValueError, IndexError):
+            if not data or len(data) < 2:
                 continue
 
-        return MagneticFieldData(
-            readings=readings[-100:],  # Keep last 100 readings
-            last_updated=readings[-1].time_tag if readings else None,
-        )
-    except Exception as e:
-        logger.error(f"Failed to fetch magnetic field data: {e}")
-        return None
+            readings = []
+            for row in data[1:]:
+                # Data may have gaps indicated by empty values
+                try:
+                    readings.append(
+                        MagneticFieldReading(
+                            time_tag=row[0],
+                            bx_gsm=float(row[1]) if row[1] not in [None, "", "-999.9", "-999"] else None,
+                            by_gsm=float(row[2]) if row[2] not in [None, "", "-999.9", "-999"] else None,
+                            bz_gsm=float(row[3]) if row[3] not in [None, "", "-999.9", "-999"] else None,
+                            bt=float(row[6]) if len(row) > 6 and row[6] not in [None, "", "-999.9", "-999"] else None,
+                        )
+                    )
+                except (ValueError, IndexError):
+                    continue
+
+            # Check for data gaps (e.g., fewer readings recently or gaps in time)
+            data_gap = False
+            if len(readings) < 10:
+                data_gap = True
+            elif readings[-1].bz_gsm is None:
+                data_gap = True
+
+            if readings:
+                return MagneticFieldData(
+                    readings=readings[-100:],
+                    last_updated=readings[-1].time_tag,
+                    source=source_name,
+                    data_gap=data_gap
+                )
+        except Exception as e:
+            logger.warning(f"Failed to fetch magnetic field from {source_name}: {e}. Failing over...")
+            continue
+            
+    logger.error("All magnetic field satellite sources failed.")
+    return None
 
 async def fetch_plasma() -> Optional[PlasmaData]:
     """
-    Fetch 1-day solar wind plasma data.
-    Format: [["time_tag","density","speed","temperature"], [...], ...]
+    Fetch solar wind plasma data with failover between DSCOVR and ACE.
     """
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(PLASMA_URL)
-            resp.raise_for_status()
-            data = resp.json()
+    for source_name, url in PLASMA_SOURCES:
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                data = resp.json()
 
-        if not data or len(data) < 2:
-            return None
-
-        readings = []
-        for row in data[1:]:
-            try:
-                readings.append(
-                    PlasmaReading(
-                        time_tag=row[0],
-                        density=float(row[1]) if row[1] not in [None, "", "-999.9"] else None,
-                        speed=float(row[2]) if row[2] not in [None, "", "-999.9"] else None,
-                        temperature=float(row[3]) if row[3] not in [None, "", "-999.9"] else None,
-                    )
-                )
-            except (ValueError, IndexError):
+            if not data or len(data) < 2:
                 continue
 
-        return PlasmaData(
-            readings=readings[-100:],
-            last_updated=readings[-1].time_tag if readings else None,
-        )
-    except Exception as e:
-        logger.error(f"Failed to fetch plasma data: {e}")
-        return None
+            readings = []
+            for row in data[1:]:
+                try:
+                    readings.append(
+                        PlasmaReading(
+                            time_tag=row[0],
+                            density=float(row[1]) if row[1] not in [None, "", "-999.9", "-999"] else None,
+                            speed=float(row[2]) if row[2] not in [None, "", "-999.9", "-999"] else None,
+                            temperature=float(row[3]) if row[3] not in [None, "", "-999.9", "-999"] else None,
+                        )
+                    )
+                except (ValueError, IndexError):
+                    continue
+                    
+            data_gap = False
+            if len(readings) < 10 or readings[-1].speed is None:
+                data_gap = True
+
+            if readings:
+                return PlasmaData(
+                    readings=readings[-100:],
+                    last_updated=readings[-1].time_tag,
+                    source=source_name,
+                    data_gap=data_gap
+                )
+        except Exception as e:
+            logger.warning(f"Failed to fetch plasma data from {source_name}: {e}. Failing over...")
+            continue
+            
+    logger.error("All plasma satellite sources failed.")
+    return None
 
 async def fetch_aurora_grid() -> Optional[AuroraGridData]:
     """

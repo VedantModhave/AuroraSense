@@ -34,11 +34,15 @@ function latRing(lat) {
   return Array.from({ length: 361 }, (_, i) => [i - 180, lat])
 }
 
-/** Aurora oval polygon: filled band from visibilityLatitude to 90°N. */
+/** Aurora oval polygon: filled band from visibilityLatitude to ~85°N (max Mercator). */
 function buildAuroraPolygon(lat) {
-  const outer = latRing(90)
-  const inner = [...latRing(lat)].reverse()
-  return [[...outer, outer[0]], [...inner, inner[0]]]
+  // Web Mercator crashes at lat=90, cap at 85.05 for polygon projection
+  const safeLat = Math.min(lat, 85.0)
+  const outer = latRing(85.05)
+  const inner = [...latRing(safeLat)].reverse()
+  
+  // Return a single ring that follows the top edge, then the bottom edge
+  return [...outer, ...inner, outer[0]]
 }
 
 /** Visibility boundary as a LineLayer data array. */
@@ -58,10 +62,10 @@ function AuroraMapInner({ visibilityLatitude = 65 }) {
       id: 'aurora-oval',
       data: [{ polygon: buildAuroraPolygon(visibilityLatitude) }],
       getPolygon: d => d.polygon,
-      getFillColor: [0, 255, 136, 35],
-      getLineColor: [0, 0, 0, 0],
+      getFillColor: [0, 255, 136, 100],
+      getLineColor: [0, 255, 136, 50],
       filled: true,
-      stroked: false,
+      stroked: true,
       pickable: false,
     }),
     new LineLayer({

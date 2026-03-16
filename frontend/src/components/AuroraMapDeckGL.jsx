@@ -47,8 +47,8 @@ function buildAuroraOvalPolygon(auroraPoints, threshold = 20) {
   const sortedLons = Object.keys(lonBins).map(Number).sort((a, b) => a - b)
   if (sortedLons.length < 3) return null
 
-  const outer = sortedLons.map(lon => [lon, Math.max(...lonBins[lon])])
-  const inner = sortedLons.map(lon => [lon, Math.min(...lonBins[lon])])
+  const outer = sortedLons.map(lon => [lon, Math.min(85.05, Math.max(...lonBins[lon]))])
+  const inner = sortedLons.map(lon => [lon, Math.min(85.05, Math.min(...lonBins[lon]))])
 
   // Close the polygon
   const ring = [...outer, ...[...inner].reverse(), outer[0]]

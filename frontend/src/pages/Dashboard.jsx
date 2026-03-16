@@ -8,6 +8,7 @@ import AlertIndicator from '../components/AlertIndicator'
 import AlertSettings from '../components/AlertSettings'
 import SolarWindPanel from '../components/SolarWindPanel'
 import VisibilityGauge from '../components/VisibilityGauge'
+import PhotographyAdvisor from '../components/PhotographyAdvisor'
 
 export default function Dashboard() {
   const { kpData, forecast, loading, error, refetch } = useAuroraData()
@@ -155,6 +156,9 @@ export default function Dashboard() {
                   label="Based on current aurora probability"
                 />
               )}
+
+              {/* PWA / Innovation Stretch Goal: Settings Advisor */}
+              <PhotographyAdvisor kpIndex={currentKp} />
 
               {/* Solar Wind Telemetry Panel */}
               <SolarWindPanel spaceWeather={spaceWeather} />
